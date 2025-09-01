@@ -1,1 +1,1 @@
-window.parent.parent.postMessage('captchaReady','*')
+none=window.open('','hamid');alert(none.location.href)
