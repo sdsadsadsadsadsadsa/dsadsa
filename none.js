@@ -1,1 +1,1 @@
-alert(1)
+alert('im the goat');parent.postMessage('captchaReady','*')
