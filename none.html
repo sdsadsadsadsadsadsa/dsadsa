@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>$6,000 Bug Bounty — One‑Click Account Takeover (Sanitized)</title>
+  <meta name="description" content="A sanitized bug bounty write‑up about a one‑click account takeover via email verification flow abuse. Includes video and a safe lab link." />
+  <style>
+    :root{
+      --bg:#0b0d12; --card:#121521; --muted:#9aa3b2; --text:#e8ecf3; --accent:#7c5cff; --ok:#2ecc71; --warn:#ffb020;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans);}
+    a{color:var(--accent); text-decoration:none}
+    a:hover{text-decoration:underline}
+    header{padding:48px 16px; background:linear-gradient(180deg, rgba(124,92,255,.2), rgba(124,92,255,0)); border-bottom:1px solid rgba(255,255,255,.06)}
+    .wrap{max-width:900px;margin:0 auto;padding:0 16px}
+    .badge{display:inline-block; padding:6px 10px; border:1px solid rgba(255,255,255,.2); border-radius:999px; font-size:12px; color:var(--muted)}
+    h1{font-size:36px; line-height:1.1; margin:14px 0 8px}
+    .sub{color:var(--muted)}
+    .card{background:var(--card); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:24px; margin:24px 0}
+    .grid{display:grid; gap:16px}
+    @media(min-width:800px){.grid{grid-template-columns:2fr 1fr}}
+    pre, code{font-family:var(--mono); font-size:14px}
+    pre{background:#0a0c12; border:1px solid rgba(255,255,255,.08); padding:16px; border-radius:12px; overflow:auto}
+    .callout{border-left:4px solid var(--warn); padding:12px 16px; background:#0a0c12; color:#ffdca8; border-radius:8px}
+    .ok{border-left-color:var(--ok); color:#c8f7dc}
+    .redacted{filter:blur(4px); user-select:none}
+    .btn{display:inline-block; padding:10px 14px; border-radius:12px; background:var(--accent); color:white; font-weight:600}
+    .btn:active{transform:translateY(1px)}
+    footer{padding:32px 16px; color:var(--muted); text-align:center; border-top:1px solid rgba(255,255,255,.06)}
+    .small{font-size:13px; color:var(--muted)}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <span class="badge">Responsible Disclosure • Sanitized</span>
+      <h1>$6,000 Bug Bounty: One‑Click Account Takeover Exploit Uncovered</h1>
+      <p class="sub">A high‑level, redacted write‑up about abusing an email‑verification flow to bind an attacker email and seize an account. All paths and payloads are altered for safety.</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="grid">
+      <article>
+        <div class="card">
+          <h2>Hey there, bug hunters and security enthusiasts!</h2>
+          <p>I stumbled upon a jaw‑dropping vulnerability that scored a <strong>$6,000 bounty</strong>—a one‑click account takeover that was as simple as it was dangerous. Below is a <em>sanitized</em> breakdown, a video walkthrough, and a safe lab where you can explore the concept without harming anything real.</p>
+          <div class="callout">
+            <strong>Note:</strong> Technical identifiers, API paths, and the direct payload are intentionally <em>redacted</em> or generalized to avoid facilitating abuse. Use this for defense and education.
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>The Discovery: a “too good to be true” moment</h3>
+          <p>By examining the platform’s <em>email verification</em> flow, I found I could bind my email to any logged‑in user’s account. One click, and I owned their account—projects, environment variables, the works.</p>
+        </div>
+
+        <div class="card">
+          <h3>How the vulnerability worked (sanitized)</h3>
+          <p>Users received a verification URL like:</p>
+          <pre><code>https://redacted.example/email-verification/#verify_token=&lt;codeId&gt;-&lt;secret&gt;</code></pre>
+          <p>Client‑side code parsed the hash and split it into two parts:</p>
+          <pre><code>// Pseudocode (sanitized)
+const parts = window.location.hash.replace("#verify_token=", "").split("-");
+const codeId = parts[0];
+const secret = parts[1];
+// codeId should map to backend verification… but it wasn’t validated strictly
+</code></pre>
+          <p>That <code>codeId</code> was then used to construct a request to the backend to verify the email. <em>The bug:</em> the app implicitly trusted <code>codeId</code> and failed to constrain which endpoint it referenced.</p>
+        </div>
+
+        <div class="card">
+          <h3>Abusing the flow (concept only)</h3>
+          <p>With insufficient validation, a crafted value could coerce the client into calling an unintended backend route—e.g., a <em>change‑email</em> action—without CSRF protection or server‑side checks linking the request to the verification flow.</p>
+          <p>Illustrative (changed) server path the client ended up hitting:</p>
+          <pre><code>PUT /api/v1/users/change-email?email=attacker@redacted.tld
+Host: redacted.example
+Origin: https://redacted.example</code></pre>
+          <p class="small">The exact route and parameters are <strong>changed</strong> for safety. Do not target real systems.</p>
+        </div>
+
+        <div class="card">
+          <h3>The payload (redacted)</h3>
+          <p>The original proof‑of‑concept used a single URL. To prevent misuse, the direct payload is blurred below.</p>
+          <pre><code class="redacted">https://redacted.example/email-verification/#verify_token=[REDACTED-PAYLOAD]</code></pre>
+          <div class="callout ok"><strong>Defensive takeaway:</strong> Never trust client‑controlled routing or identifiers. Enforce strict server‑side mapping for verification codes, add CSRF protections, and validate the expected handler for each token.
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Impact</h3>
+          <ul>
+            <li>Permanent account lockout of victims</li>
+            <li>Access to sensitive data (projects, environment variables)</li>
+            <li>Potential for malicious deployments and downstream compromise</li>
+          </ul>
+          <p>Severity assessed as <strong>critical</strong> (CVSS ~9+). Payout: <strong>$6,000</strong>.</p>
+        </div>
+
+        <div class="card">
+          <h3>Try it yourself — in a safe lab</h3>
+          <p>I set up a <em>controlled lab</em> that mimics the flaw so you can learn without risk. Head over to your lab URL and practice detecting and fixing the issue.</p>
+          <p><a class="btn" href="https://your-lab.example" target="_blank" rel="noopener">Open the Safe Lab</a></p>
+          <p class="small">Replace <code>your-lab.example</code> with your own safe environment if you’re forking this page.</p>
+        </div>
+
+        <div class="card">
+          <h3>Video walkthrough</h3>
+          <div style="position:relative;padding-top:56.25%">
+            <iframe src="https://www.youtube.com/embed/BcbWC0LO8Yk" title="One‑Click Account Takeover — Sanitized Walkthrough" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:12px"></iframe>
+          </div>
+          <p class="small">If the embed doesn’t load, <a href="https://www.youtube.com/watch?v=BcbWC0LO8Yk" target="_blank" rel="noopener">watch on YouTube</a>.</p>
+        </div>
+
+        <div class="card">
+          <h3>Join the bug bounty community</h3>
+          <p>Even “simple” oversights—like trusting client‑side input—can have catastrophic consequences. Got a story of your own? Share it! If you’re itching to explore similar bugs, use the lab above and the video, and let’s geek out over web security together. Happy hunting! 🕵️‍♂️</p>
+        </div>
+      </article>
+      <aside>
+        <div class="card">
+          <h4>Quick Fix Checklist (Defense)</h4>
+          <ul>
+            <li>Bind verification codes to a single, server‑known action.</li>
+            <li>Validate token structure and origin server‑side.</li>
+            <li>Use short‑lived, one‑time tokens.</li>
+            <li>Enforce CSRF protection on state‑changing routes.</li>
+            <li>Log and alert on odd verification flows.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Disclosure & Ethics</h4>
+          <p class="small">This post is for educational/defensive purposes. Do not test on systems without written permission. All identifiers, API paths, and payloads are altered or redacted.</p>
+        </div>
+      </aside>
+    </div>
+
+    <div class="card">
+      <h3>Credits & Contact</h3>
+      <p>Questions or feedback? Ping me on X/Twitter with <strong>#BugBountyChallenge</strong>.</p>
+    </div>
+  </main>
+
+  <footer>
+    <p>© <span id="year"></span> Your Name — Sanitized write‑up for GitHub Pages.</p>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
